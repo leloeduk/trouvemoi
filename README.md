@@ -93,6 +93,12 @@ storeFile=<chemin vers upload-keystore.jks>
 
 android/app/build.gradle :
 gradle
+
+plugin
+....
+import java.util.Properties
+import java.io.FileInputStream
+
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -101,6 +107,7 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
 ...
+
 signingConfigs {
     create("release") {
         keyAlias = keystoreProperties["keyAlias"] as String
