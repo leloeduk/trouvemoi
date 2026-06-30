@@ -94,15 +94,20 @@ storeFile=<chemin vers upload-keystore.jks>
 android/app/build.gradle :
 gradle
 
-plugin
+au debut
 ....
+
 import java.util.Properties
 import java.io.FileInputStream
 
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
+......
+apres plugin
+....
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
