@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "361952428559",
+    "project_id": "trouvemoi-ad8fd",
+    "storage_bucket": "trouvemoi-ad8fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:361952428559:android:dbe9a79e72f8cddadc997a",
+        "android_client_info": {
+          "package_name": "com.leloeduk.trouvemoi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "361952428559-qvq5s8ob832cf2ggil65u3c7fos4b764.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4mAy3uhyg4BF5pDnSS0CWmedeWnbV6j0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "361952428559-qvq5s8ob832cf2ggil65u3c7fos4b764.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "361952428559-cba6ju1a93f9e0tnv4mnmhol7lvfrlai.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.leloeduk.trouvemoi"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

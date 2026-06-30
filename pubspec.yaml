@@ -1,0 +1,34 @@
+name: trouvemoi
+description: Application Flutter pour retrouver des pieces d'identite perdues.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cloud_firestore: ^5.6.0
+  cupertino_icons: ^1.0.8
+  equatable: ^2.0.7
+  firebase_auth: ^5.3.4
+  firebase_core: ^3.9.0
+  firebase_storage: ^12.3.7
+  flutter_bloc: ^8.1.6
+  get_it: ^8.0.3
+  go_router: ^14.6.2
+  google_sign_in: ^6.2.2
+  image_picker: ^1.1.2
+  intl: ^0.20.1
+  cached_network_image: ^3.4.1
+  url_launcher: ^6.3.1
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
