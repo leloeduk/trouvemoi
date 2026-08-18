@@ -2,6 +2,9 @@ class AppConstants {
   static const String appName = 'RetrouvePièce';
   static const String collectionDocuments = 'documents';
 
+  static const String phoneExample = '06 635 24 55';
+  static const String phoneExampleRaw = '066352455';
+
   static const List<String> documentTypes = [
     'Carte Nationale d\'Identité',
     'Passeport',
@@ -10,23 +13,7 @@ class AppConstants {
     'Carte Professionnelle',
     'Titre de Séjour',
     'Carte Bancaire',
-    'Autre',
-  ];
-
-  static const List<String> congoCities = [
-    'Brazzaville',
-    'Pointe-Noire',
-    'Dolisie',
-    'Nkayi',
-    'Ouesso',
-    'Mossendjo',
-    'Kinkala',
-    'Makoua',
-    'Owando',
-    'Sibiti',
-    'Impfondo',
-    'Gamboma',
-    'Bandundu',
-    'Autre',
+    'Enfant perdu',
+    'Autre objet',
   ];
 }

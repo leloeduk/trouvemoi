@@ -1,146 +1,380 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../core/services/auth_service.dart';
-import '../../../../core/services/firestore_service.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/widgets/responsive_layout.dart';
-import '../../../documents/document_entity.dart';
-import '../../../documents/presentation/widgets/document_card.dart';
 
-class ProfilePage extends StatelessWidget {
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_back_button.dart';
+import '../bloc/profile_bloc.dart';
+import '../bloc/profile_event.dart';
+import '../bloc/profile_state.dart';
+
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = AuthService.instance.currentUser;
-    if (user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Mon profil')),
-        body: const Center(child: Text('Utilisateur non connecté')),
-      );
-    }
+  State<ProfilePage> createState() => _ProfilePageState();
+}
 
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<ProfileBloc>().add(LoadProfileEvent());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mon profil')),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirestoreService.instance.firestore
-            .collection(AppConstants.collectionDocuments)
-            .where('userId', isEqualTo: user.uid)
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          return ResponsiveLayout(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildProfileHeader(context, user.uid),
-                const SizedBox(height: 24),
-                Text(
-                  'Mes publications',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                if (snapshot.hasError)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Text('Erreur: ${snapshot.error}'),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Mon Profil'),
+        actions: [
+          IconButton(
+            tooltip: 'Modifier le profil',
+            icon: const Icon(Icons.edit),
+            onPressed: () => _showEditProfileDialog(context),
+          ),
+        ],
+      ),
+      body: BlocConsumer<ProfileBloc, ProfileState>(
+        listener: (context, state) {
+          if (state is ProfileUpdated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          }
+          if (state is ProfileError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is ProfileLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state is ProfileLoaded) {
+            final user = state.user;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: Column(
+                children: [
+                  // Profile Header
+                  _ProfileHeader(
+                    photoUrl: user.photoUrl,
+                    displayName: user.displayName,
+                    email: user.email,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Statistics
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.check_circle,
+                          label: 'Trouvés',
+                          value: state.documentsFound.toString(),
+                          color: AppColors.success,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.search,
+                          label: 'Perdus',
+                          value: state.documentsLost.toString(),
+                          color: AppColors.lost,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Menu Options
+                  Card(
+                    child: Column(
+                      children: [
+                        _ProfileMenuItem(
+                          icon: Icons.history,
+                          title: 'Mes publications',
+                          onTap: () => context.go('/my-publications'),
+                        ),
+                        const Divider(),
+                        _ProfileMenuItem(
+                          icon: Icons.favorite_border,
+                          title: 'Favoris',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Fonctionnalité à venir'),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(),
+                        _ProfileMenuItem(
+                          icon: Icons.settings,
+                          title: 'Paramètres',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Fonctionnalité à venir'),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(),
+                        _ProfileMenuItem(
+                          icon: Icons.help_outline,
+                          title: 'Aide & Support',
+                          onTap: () => context.go('/support'),
+                        ),
+                        const Divider(),
+                        _ProfileMenuItem(
+                          icon: Icons.info_outline,
+                          title: 'À propos de l\'app',
+                          onTap: () => context.go('/about'),
+                        ),
+                      ],
                     ),
-                  )
-                else if (!snapshot.hasData)
-                  const Center(child: CircularProgressIndicator())
-                else if (snapshot.data!.docs.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Column(
-                        children: [
-                          Icon(Icons.inbox_outlined, size: 48),
-                          SizedBox(height: 16),
-                          Text("Vous n'avez pas encore publié de pièce"),
-                        ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Sign Out Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showSignOutDialog(context),
+                      icon: const Icon(Icons.logout, color: AppColors.danger),
+                      label: const Text(
+                        'Se déconnecter',
+                        style: TextStyle(color: AppColors.danger),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.danger),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
-                  )
-                else
-                  ...snapshot.data!.docs.map((doc) {
-                    final document = DocumentEntity.fromFirestore(doc);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: DocumentCard(
-                        document: document,
-                        onTap: () =>
-                            context.push('/document-details/${doc.id}'),
-                      ),
-                    );
-                  }),
-              ],
-            ),
-          );
+                  ),
+                  const SizedBox(height: 16),
+
+                  // App Version
+                  Text(
+                    'Trouve Moi — Version 1.0.0',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return const Center(child: Text('Erreur de chargement'));
         },
       ),
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, String uid) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirestoreService.instance.firestore
-          .collection('users')
-          .doc(uid)
-          .snapshots(),
-      builder: (context, snapshot) {
-        final data = snapshot.data?.data() as Map<String, dynamic>?;
-        final name = data?['displayName'] as String? ?? 'Utilisateur';
-        final email = data?['email'] as String? ?? '';
-        final photoUrl = data?['photoUrl'] as String?;
+  void _showEditProfileDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modifier le profil'),
+        content: const Text('Fonctionnalité à venir'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 36,
-                  backgroundImage:
-                      photoUrl != null ? NetworkImage(photoUrl) : null,
-                  child: photoUrl == null
-                      ? Text(name[0].toUpperCase(),
-                          style: const TextStyle(fontSize: 28))
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      if (email.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(email,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant)),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+  void _showSignOutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Déconnexion'),
+        content: const Text('Voulez-vous vraiment vous déconnecter ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<AuthBloc>().add(SignOutRequested());
+              context.go('/login');
+            },
+            child: const Text(
+              'Déconnexion',
+              style: TextStyle(color: AppColors.danger),
             ),
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  final String? photoUrl;
+  final String displayName;
+  final String email;
+
+  const _ProfileHeader({
+    required this.photoUrl,
+    required this.displayName,
+    required this.email,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary, Color(0xFF60A5FA)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 44,
+            backgroundColor: Colors.white.withValues(alpha: 0.25),
+            backgroundImage:
+                photoUrl != null && photoUrl!.isNotEmpty
+                    ? NetworkImage(photoUrl!)
+                    : null,
+            child: photoUrl == null || photoUrl!.isEmpty
+                ? const Icon(Icons.person, size: 44, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            displayName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            email,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 24, color: color),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _ProfileMenuItem({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 20, color: AppColors.primary),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: AppColors.textSecondary,
+      ),
+      onTap: onTap,
     );
   }
 }

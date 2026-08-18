@@ -63,7 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '361952428559',
     projectId: 'trouvemoi-ad8fd',
     storageBucket: 'trouvemoi-ad8fd.firebasestorage.app',
-    iosClientId: '361952428559-cba6ju1a93f9e0tnv4mnmhol7lvfrlai.apps.googleusercontent.com',
+    iosClientId:
+        '361952428559-cba6ju1a93f9e0tnv4mnmhol7lvfrlai.apps.googleusercontent.com',
     iosBundleId: 'com.leloeduk.trouvemoi',
   );
   static const FirebaseOptions macos = FirebaseOptions(
@@ -72,7 +73,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '361952428559',
     projectId: 'trouvemoi-ad8fd',
     storageBucket: 'trouvemoi-ad8fd.firebasestorage.app',
-    iosClientId: '361952428559-cba6ju1a93f9e0tnv4mnmhol7lvfrlai.apps.googleusercontent.com',
+    iosClientId:
+        '361952428559-cba6ju1a93f9e0tnv4mnmhol7lvfrlai.apps.googleusercontent.com',
     iosBundleId: 'com.leloeduk.trouvemoi',
   );
 

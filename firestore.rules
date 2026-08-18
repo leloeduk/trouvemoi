@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /documents/{documentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.finderId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.finderId == request.auth.uid;
+    }
+
+    // Configuration publique de l'app (ex: notification de mise à jour).
+    // Lecture autorisée sans connexion, écriture réservée aux utilisateurs connectés.
+    match /app_config/{configId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

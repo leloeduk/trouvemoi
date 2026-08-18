@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "361952428559-kfhgru3790le6fftbof7g2ufkck8vnro.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.leloeduk.trouvemoi",
+            "certificate_hash": "59b328d707424b8be372fd516104f1313b4d879f"
+          }
+        },
+        {
           "client_id": "361952428559-qvq5s8ob832cf2ggil65u3c7fos4b764.apps.googleusercontent.com",
           "client_type": 3
         }

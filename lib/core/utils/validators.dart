@@ -6,9 +6,10 @@ class Validators {
 
   static String? phone(String? value) {
     if (value == null || value.trim().isEmpty) return 'Le téléphone est requis';
-    final regex = RegExp(r'^0[5-6]\d{7}$');
-    if (!regex.hasMatch(value.trim())) {
-      return 'Numéro invalide (ex: 06 123 45 67)';
+    final cleaned = value.trim().replaceAll(RegExp(r'[\s.-]'), '');
+    final local = RegExp(r'^0[4-6]\d{7}$');
+    if (!local.hasMatch(cleaned)) {
+      return 'Numéro invalide (ex: 06 635 24 55)';
     }
     return null;
   }
