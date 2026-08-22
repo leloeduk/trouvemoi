@@ -126,7 +126,8 @@ class UserFirebaseService {
 
       return user;
     } catch (e) {
-      throw Exception('Échec de la connexion Google: $e');
+      throw Exception(
+          'Échec de la connexion Google peut-etre votre connexion est interrompue : $e');
     }
   }
 

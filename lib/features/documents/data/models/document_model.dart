@@ -12,12 +12,14 @@ class DocumentModel extends DocumentEntity {
     required super.finderName,
     required super.finderPhone,
     required super.location,
+    super.arrondissement,
     required super.date,
     required super.status,
   });
 
   // Convert Firestore document to Model
   factory DocumentModel.fromFirestore(Map<String, dynamic> json, String id) {
+    final status = json['status'] ?? 'lost';
     return DocumentModel(
       id: id,
       type: json['type'] ?? '',
@@ -28,11 +30,32 @@ class DocumentModel extends DocumentEntity {
       finderName: json['finderName'] ?? '',
       finderPhone: json['finderPhone'] ?? '',
       location: json['location'] ?? '',
+      arrondissement: json['arrondissement'] ?? '',
       date: (json['date'] as Timestamp).toDate(),
-      status: json['status'] == 'found'
-          ? DocumentStatus.found
-          : DocumentStatus.lost,
+      status: _statusFromString(status),
     );
+  }
+
+  static DocumentStatus _statusFromString(String status) {
+    switch (status) {
+      case 'found':
+        return DocumentStatus.found;
+      case 'resolved':
+        return DocumentStatus.resolved;
+      default:
+        return DocumentStatus.lost;
+    }
+  }
+
+  static String _statusToString(DocumentStatus status) {
+    switch (status) {
+      case DocumentStatus.found:
+        return 'found';
+      case DocumentStatus.resolved:
+        return 'resolved';
+      case DocumentStatus.lost:
+        return 'lost';
+    }
   }
 
   // Convert Model to Firestore document
@@ -46,8 +69,9 @@ class DocumentModel extends DocumentEntity {
       'finderName': finderName,
       'finderPhone': finderPhone,
       'location': location,
+      'arrondissement': arrondissement,
       'date': Timestamp.fromDate(date),
-      'status': status == DocumentStatus.found ? 'found' : 'lost',
+      'status': _statusToString(status),
     };
   }
 
@@ -63,6 +87,7 @@ class DocumentModel extends DocumentEntity {
       finderName: entity.finderName,
       finderPhone: entity.finderPhone,
       location: entity.location,
+      arrondissement: entity.arrondissement,
       date: entity.date,
       status: entity.status,
     );

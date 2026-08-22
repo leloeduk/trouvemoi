@@ -13,17 +13,11 @@ class ProfileLoading extends ProfileState {}
 
 class ProfileLoaded extends ProfileState {
   final UserEntity user;
-  final int documentsFound;
-  final int documentsLost;
 
-  ProfileLoaded({
-    required this.user,
-    this.documentsFound = 0,
-    this.documentsLost = 0,
-  });
+  ProfileLoaded({required this.user});
 
   @override
-  List<Object?> get props => [user, documentsFound, documentsLost];
+  List<Object?> get props => [user];
 }
 
 class ProfileUpdated extends ProfileState {

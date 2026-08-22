@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/ad_banner.dart';
 import '../../../../core/widgets/app_drawer.dart';
+import '../../../../core/widgets/shimmer.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -27,123 +28,146 @@ class _HomePageState extends State<HomePage> {
     context.read<DocumentBloc>().add(LoadAllDocumentsEvent());
   }
 
+  Widget _buildRecentDocuments() {
+    return BlocBuilder<DocumentBloc, DocumentState>(
+      builder: (context, state) {
+        if (state is DocumentLoading) {
+          return SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            sliver: SliverToBoxAdapter(
+              child: DocumentListSkeleton(count: 2),
+            ),
+          );
+        }
+        if (state is DocumentLoaded) {
+          if (state.documents.isEmpty) {
+            return SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              sliver: SliverToBoxAdapter(
+                child: _EmptyDocuments(),
+              ),
+            );
+          }
+          return SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            sliver: SliverList.builder(
+              itemCount:
+                  state.documents.length > 3 ? 3 : state.documents.length,
+              itemBuilder: (context, index) {
+                return DocumentCard(document: state.documents[index]);
+              },
+            ),
+          );
+        }
+        if (state is DocumentError) {
+          return SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            sliver: SliverToBoxAdapter(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Erreur: ${state.message}'),
+                ),
+              ),
+            ),
+          );
+        }
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: const Text('Trouve Moi'),
-        actions: [
-          IconButton(
-            tooltip: 'Notifications',
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Aucune notification')),
-              );
-            },
-          ),
-        ],
-      ),
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, authState) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Welcome Card
-                _WelcomeCard(user: authState.user),
-                const SizedBox(height: 20),
-
-                // Quick Actions
-                Text(
-                  'Actions rapides',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _QuickActionCard(
-                        icon: Icons.add_circle_outline,
-                        label: 'Publier',
-                        color: AppColors.primary,
-                        onTap: () => context.go('/add-document'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _QuickActionCard(
-                        icon: Icons.search,
-                        label: 'Rechercher',
-                        color: AppColors.accent,
-                        onTap: () => context.go('/search-document'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _QuickActionCard(
-                        icon: Icons.list_alt,
-                        label: 'Parcourir',
-                        color: const Color(0xFF0EA5E9),
-                        onTap: () => context.go('/browse'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Recent Documents
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Documents récents',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    TextButton(
-                      onPressed: () => context.go('/browse'),
-                      child: const Text('Voir tout'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Recent Documents List
-                BlocBuilder<DocumentBloc, DocumentState>(
-                  builder: (context, state) {
-                    if (state is DocumentLoading) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32),
-                          child: CircularProgressIndicator(),
-                        ),
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                title: const Text('Trouve Moi'),
+                actions: [
+                  IconButton(
+                    tooltip: 'Notifications',
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Aucune notification')),
                       );
-                    }
-                    if (state is DocumentLoaded) {
-                      if (state.documents.isEmpty) {
-                        return _EmptyDocuments();
-                      }
-                      return Column(
-                        children: state.documents.take(3).map((doc) {
-                          return DocumentCard(document: doc);
-                        }).toList(),
-                      );
-                    }
-                    if (state is DocumentError) {
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text('Erreur: ${state.message}'),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                    },
+                  ),
+                ],
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _WelcomeCard(user: authState.user),
+                      const SizedBox(height: 20),
+
+                      // Quick Actions
+                      Text(
+                        'Actions rapides',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _QuickActionCard(
+                              icon: Icons.add_circle_outline,
+                              label: 'Publier',
+                              color: AppColors.primary,
+                              onTap: () => context.go('/add-document'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _QuickActionCard(
+                              icon: Icons.search,
+                              label: 'Rechercher',
+                              color: AppColors.accent,
+                              onTap: () => context.go('/search-document'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _QuickActionCard(
+                              icon: Icons.list_alt,
+                              label: 'Parcourir',
+                              color: const Color(0xFF0EA5E9),
+                              onTap: () => context.go('/browse'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Recent Documents
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Documents récents',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/browse'),
+                            child: const Text('Voir tout'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              _buildRecentDocuments(),
+            ],
           );
         },
       ),
@@ -228,7 +252,7 @@ class _WelcomeCard extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 32,
+            radius: 20,
             backgroundColor: Colors.white.withValues(alpha: 0.25),
             backgroundImage: photoUrl != null && photoUrl.isNotEmpty
                 ? NetworkImage(photoUrl)
@@ -237,7 +261,7 @@ class _WelcomeCard extends StatelessWidget {
                 ? const Icon(Icons.person, size: 32, color: Colors.white)
                 : null,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,11 +270,10 @@ class _WelcomeCard extends StatelessWidget {
                   'Bonjour, $name',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
                 const Text(
                   'Retrouvez vos documents facilement',
                   style: TextStyle(
@@ -261,15 +284,18 @@ class _WelcomeCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.location_on, color: Colors.white70, size: 20),
-          const SizedBox(width: 4),
-          const Text(
-            'Congo',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              const Icon(Icons.location_on, color: Colors.white70, size: 20),
+              const Text(
+                'Congo',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -334,7 +360,7 @@ class _QuickActionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
           child: Column(
             children: [
               Container(

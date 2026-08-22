@@ -33,8 +33,8 @@ class _ConnectivityStatusState extends State<ConnectivityStatus> {
   }
 
   void _updateFromResults(List<ConnectivityResult> results) {
-    final offline = results.isEmpty ||
-        results.every((r) => r == ConnectivityResult.none);
+    final offline =
+        results.isEmpty || results.every((r) => r == ConnectivityResult.none);
     if (!mounted || _isOffline == offline) return;
     setState(() => _isOffline = offline);
   }
@@ -50,36 +50,41 @@ class _ConnectivityStatusState extends State<ConnectivityStatus> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (_isOffline)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: const Color(0xFFFFF3CD),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.cloud_off,
-                  size: 18,
-                  color: Color(0xFF8A5A00),
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Hors ligne — les données affichées peuvent être obsolètes',
-                    style: TextStyle(
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (_isOffline)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(4),
+                color: const Color(0xFFFFF3CD),
+                child: const Row(
+                  children: [
+                    SizedBox(width: 16),
+                    Icon(
+                      Icons.cloud_off,
+                      size: 18,
                       color: Color(0xFF8A5A00),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
                     ),
-                  ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Hors ligne — les données affichées peuvent être obsolètes',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        Expanded(child: widget.child),
-      ],
+              ),
+            Expanded(child: widget.child),
+          ],
+        ),
+      ),
     );
   }
 }

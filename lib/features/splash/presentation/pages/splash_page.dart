@@ -6,6 +6,8 @@ import '../../../../core/services/ad_service.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../documents/presentation/bloc/document_bloc.dart';
+import '../../../documents/presentation/bloc/document_event.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -27,6 +29,9 @@ class _SplashPageState extends State<SplashPage>
 
     // Démarrer l'écoute de l'état d'authentification
     context.read<AuthBloc>().add(AuthSubscriptionRequested());
+
+    // Précharger les documents en arrière-plan
+    context.read<DocumentBloc>().add(LoadAllDocumentsEvent());
 
     // Animation
     _controller = AnimationController(

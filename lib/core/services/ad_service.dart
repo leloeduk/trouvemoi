@@ -50,6 +50,17 @@ class AdService {
   AppOpenAd? _appOpenAd;
   RewardedAd? _rewardedAd;
 
+  int _detailViewCount = 0;
+
+  /// Compte les ouvertures de la page de détail d'un document et affiche une
+  /// publicité interstitielle une fois toutes les [frequency] ouvertures.
+  void onDocumentDetailOpened({int frequency = 5}) {
+    _detailViewCount++;
+    if (_detailViewCount % frequency == 0) {
+      unawaited(showInterstitial());
+    }
+  }
+
   /// Initialise le SDK AdMob et précharge les formats pleine écran.
   Future<void> init() async {
     try {

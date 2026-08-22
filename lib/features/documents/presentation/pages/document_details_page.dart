@@ -5,10 +5,14 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/constants/constants.dart';
 import '../../../../core/services/ad_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/ad_banner.dart';
 import '../../../../core/widgets/app_back_button.dart';
+import '../../../../core/widgets/shimmer.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/entities/document_entity.dart';
 import '../bloc/document_bloc.dart';
 import '../bloc/document_event.dart';
@@ -28,6 +32,8 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
   void initState() {
     super.initState();
     context.read<DocumentBloc>().add(LoadDocumentByIdEvent(widget.docId));
+    // Publicité interstitielle aléatoire : une fois toutes les 5 ouvertures.
+    AdService.instance.onDocumentDetailOpened();
   }
 
   Future<void> _launchUrl(String url) async {
@@ -101,63 +107,166 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
     }
   }
 
+  void _onMarkResolved(DocumentEntity document) {
+    context.read<DocumentBloc>().add(MarkDocumentResolvedEvent(document.id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Document marqué comme résolu'),
+        backgroundColor: AppColors.resolved,
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(DocumentEntity document) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer ce document ?'),
+        content: Text(
+          'Voulez-vous vraiment supprimer « ${document.title} » ? '
+          'Cette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    context.read<DocumentBloc>().add(DeleteDocumentEvent(document.id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Document supprimé'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+    context.go('/home');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const Text('Détails du document'),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: BlocBuilder<DocumentBloc, DocumentState>(
+      body: BlocBuilder<DocumentBloc, DocumentState>(
         builder: (context, state) {
-          if (state is DocumentLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          final document = _documentFromState(state);
 
-          if (state is DocumentDetailLoaded) {
-            return _buildDocumentDetails(context, state.document);
-          }
-
-          if (state is DocumentDetailNotFound) {
-            return _ErrorState(
-              message: 'Document introuvable',
-              onRetry: () {
-                context
-                    .read<DocumentBloc>()
-                    .add(LoadDocumentByIdEvent(widget.docId));
-              },
-              onHome: () => context.go('/home'),
+          if (document != null) {
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  leading: const AppBackButton(),
+                  title: const Text('Détails du document'),
+                ),
+                SliverToBoxAdapter(
+                  child: _buildDocumentDetails(context, document),
+                ),
+                const SliverToBoxAdapter(child: AdBannerWidget()),
+              ],
             );
           }
 
-          if (state is DocumentError) {
-            return _ErrorState(
-              message: state.message,
-              onRetry: () {
-                context
-                    .read<DocumentBloc>()
-                    .add(LoadDocumentByIdEvent(widget.docId));
-              },
-              onHome: () => context.go('/home'),
+          if (state is DocumentLoading) {
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  leading: const AppBackButton(),
+                  title: const Text('Détails du document'),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        const Shimmer(
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: SkeletonBox(height: double.infinity),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Shimmer(child: SkeletonBox(height: 24)),
+                        const SizedBox(height: 12),
+                        const Shimmer(child: SkeletonBox(width: 200, height: 14)),
+                        const SizedBox(height: 16),
+                        const Shimmer(child: SkeletonBox(height: 100)),
+                        const SizedBox(height: 16),
+                        const Shimmer(child: SkeletonBox(height: 180)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          final isError =
+              state is DocumentDetailNotFound || state is DocumentError;
+          if (isError) {
+            final message = state is DocumentDetailNotFound
+                ? 'Document introuvable'
+                : (state as DocumentError).message;
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  leading: const AppBackButton(),
+                  title: const Text('Détails du document'),
+                ),
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _ErrorState(
+                    message: message,
+                    onRetry: () {
+                      context
+                          .read<DocumentBloc>()
+                          .add(LoadDocumentByIdEvent(widget.docId));
+                    },
+                    onHome: () => context.go('/home'),
+                  ),
+                ),
+              ],
             );
           }
 
           return const Center(child: Text('Chargement...'));
         },
-            ),
-          ),
-          const AdBannerWidget(),
-        ],
       ),
     );
   }
 
+  DocumentEntity? _documentFromState(DocumentState state) {
+    if (state is DocumentDetailLoaded) return state.document;
+    if (state is DocumentLoaded) {
+      for (final doc in state.documents) {
+        if (doc.id == widget.docId) return doc;
+      }
+    }
+    return null;
+  }
+
   Widget _buildDocumentDetails(BuildContext context, DocumentEntity document) {
+    final isResolved = document.isResolved;
     final isFound = document.status == DocumentStatus.found;
-    final statusColor = isFound ? AppColors.success : AppColors.lost;
+    final statusColor = isResolved
+        ? AppColors.resolved
+        : (isFound ? AppColors.success : AppColors.lost);
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState.status == AuthStatus.authenticated
+        ? authState.user!.uid
+        : '';
+    final isOwner = document.finderId == currentUserId;
+    final isAdmin = AppConstants.isAdmin(currentUserId);
 
     return SingleChildScrollView(
       padding: EdgeInsets.zero,
@@ -207,13 +316,17 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isFound ? Icons.check_circle : Icons.search,
+                        isResolved
+                            ? Icons.verified_outlined
+                            : (isFound ? Icons.check_circle : Icons.search),
                         size: 18,
                         color: Colors.white,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isFound ? 'DOCUMENT TROUVÉ' : 'DOCUMENT PERDU',
+                        isResolved
+                            ? 'DOCUMENT RÉCUPÉRÉ'
+                            : (isFound ? 'DOCUMENT TROUVÉ' : 'DOCUMENT PERDU'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
@@ -279,6 +392,14 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                           label: 'Ville',
                           value: document.location,
                         ),
+                        if (document.arrondissement.isNotEmpty) ...[
+                          const Divider(),
+                          _InfoRow(
+                            icon: Icons.location_city,
+                            label: 'Arrondissement',
+                            value: document.arrondissement,
+                          ),
+                        ],
                         const Divider(),
                         _InfoRow(
                           icon: Icons.person,
@@ -297,43 +418,85 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // Contact
-                Text(
-                  'Contacter le trouveur',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Appelez ou contactez via WhatsApp pour récupérer votre document.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _launchUrl('tel:${document.finderPhone}'),
-                        icon: const Icon(Icons.phone),
-                        label: const Text('Appeler'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                // Contact / Résolu
+                if (isResolved)
+                  _ResolvedBanner()
+                else ...[
+                  Text(
+                    'Contacter le trouveur',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Appelez ou contactez via WhatsApp pour récupérer votre document.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _launchUrl('tel:${document.finderPhone}'),
+                          icon: const Icon(Icons.phone),
+                          label: const Text('Appeler'),
+                          style: OutlinedButton.styleFrom(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () => _onWhatsAppTap(document),
-                        icon: const Icon(Icons.chat),
-                        label: const Text('WhatsApp'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF25D366),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => _onWhatsAppTap(document),
+                          icon: const Icon(Icons.chat),
+                          label: const Text('WhatsApp'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF25D366),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 16),
+
+                // Le publiant peut marquer le document comme résolu
+                if (!isResolved && isOwner)
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => _onMarkResolved(document),
+                      icon: const Icon(Icons.task_alt),
+                      label: const Text('Marquer comme résolu'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.resolved,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+
+                // L'administrateur peut supprimer n'importe quel document
+                if (isAdmin) ...[
+                  if (!isResolved && !isOwner) const SizedBox(height: 8),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _confirmDelete(document),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Supprimer ce document'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.danger,
+                        side: const BorderSide(color: AppColors.danger),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
 
                 // Bouton retour
@@ -349,6 +512,59 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResolvedBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.resolved.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.resolved.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.resolved,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.verified_outlined,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Document récupéré',
+                  style: TextStyle(
+                    color: AppColors.resolved,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Ce document a été retrouvé par son propriétaire. '
+                  'Félicitations !',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                 ),
               ],
             ),

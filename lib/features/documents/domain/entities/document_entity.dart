@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum DocumentStatus { lost, found }
+enum DocumentStatus { lost, found, resolved }
 
 class DocumentEntity extends Equatable {
   final String id;
@@ -12,6 +12,7 @@ class DocumentEntity extends Equatable {
   final String finderName;
   final String finderPhone;
   final String location;
+  final String arrondissement;
   final DateTime date;
   final DocumentStatus status;
 
@@ -25,9 +26,12 @@ class DocumentEntity extends Equatable {
     required this.finderName,
     required this.finderPhone,
     required this.location,
+    this.arrondissement = '',
     required this.date,
     required this.status,
   });
+
+  bool get isResolved => status == DocumentStatus.resolved;
 
   @override
   List<Object?> get props => [
@@ -40,6 +44,7 @@ class DocumentEntity extends Equatable {
         finderName,
         finderPhone,
         location,
+        arrondissement,
         date,
         status
       ];

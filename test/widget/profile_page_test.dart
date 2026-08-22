@@ -51,22 +51,7 @@ void main() {
     expect(find.text('Mon Profil'), findsOneWidget);
     expect(find.text('Jean Congo'), findsOneWidget);
     expect(find.text('jean@example.com'), findsOneWidget);
-    expect(find.text('Trouvés'), findsOneWidget);
-    expect(find.text('Perdus'), findsOneWidget);
     expect(find.text('Se déconnecter'), findsOneWidget);
-  });
-
-  testWidgets('affiche les statistiques trouvés/perdus', (tester) async {
-    final (authBloc, documentBloc, profileBloc) = createBlocs();
-    await pumpProfile(
-      tester,
-      authBloc: authBloc,
-      documentBloc: documentBloc,
-      profileBloc: profileBloc,
-    );
-
-    expect(find.text('5'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
   });
 
   testWidgets('ouvre la boîte de dialogue de déconnexion', (tester) async {
@@ -79,6 +64,7 @@ void main() {
     );
 
     await tester.ensureVisible(find.text('Se déconnecter'));
+    await tester.pump();
     await tester.tap(find.text('Se déconnecter'));
     await settleWithPumps(tester);
 
@@ -99,6 +85,7 @@ void main() {
     );
 
     await tester.ensureVisible(find.text('Se déconnecter'));
+    await tester.pump();
     await tester.tap(find.text('Se déconnecter'));
     await settleWithPumps(tester);
     await tester.tap(find.widgetWithText(TextButton, 'Déconnexion'));

@@ -61,6 +61,11 @@ void main() {
 
       expect(find.text('Documents récents'), findsOneWidget);
       expect(find.text('Passeport perdu'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text("Carte d'étudiant"),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text("Carte d'étudiant"), findsOneWidget);
     });
   });

@@ -16,6 +16,7 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     on<DeleteDocumentEvent>(_onDeleteDocument);
     // Ajouter dans le constructeur du DocumentBloc
     on<LoadDocumentByIdEvent>(_onLoadDocumentById);
+    on<MarkDocumentResolvedEvent>(_onMarkDocumentResolved);
   }
 
   Future<void> _onLoadAllDocuments(
@@ -84,6 +85,7 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
         finderName: event.finderName,
         finderPhone: event.finderPhone,
         location: event.location,
+        arrondissement: event.arrondissement,
         date: DateTime.now(),
         status: event.status,
       );
@@ -121,6 +123,7 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
         finderName: event.finderName,
         finderPhone: event.finderPhone,
         location: event.location,
+        arrondissement: event.arrondissement,
         date: event.date,
         status: event.status,
       );
@@ -164,6 +167,23 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
       } else {
         emit(DocumentDetailNotFound());
       }
+    } catch (e) {
+      emit(DocumentError(e.toString()));
+    }
+  }
+
+  Future<void> _onMarkDocumentResolved(
+    MarkDocumentResolvedEvent event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(DocumentLoading());
+    try {
+      await _repository.updateDocumentStatus(
+        event.documentId,
+        DocumentStatus.resolved,
+      );
+      add(LoadDocumentByIdEvent(event.documentId));
+      add(LoadAllDocumentsEvent());
     } catch (e) {
       emit(DocumentError(e.toString()));
     }

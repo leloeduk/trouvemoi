@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_back_button.dart';
+import '../../../../core/widgets/shimmer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/entities/document_entity.dart';
@@ -57,10 +58,6 @@ class _MyPublicationsPageState extends State<MyPublicationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const Text('Mes publications'),
-      ),
       body: BlocConsumer<DocumentBloc, DocumentState>(
         listener: (context, state) {
           if (state is DocumentDeleted) {
@@ -78,94 +75,116 @@ class _MyPublicationsPageState extends State<MyPublicationsPage> {
           }
         },
         builder: (context, state) {
-          if (state is DocumentLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final authState = context.read<AuthBloc>().state;
-          final currentUserId = authState.status == AuthStatus.authenticated
-              ? authState.user!.uid
-              : '';
-
-          if (state is DocumentLoaded) {
-            final mine = state.documents
-                .where((doc) => doc.finderId == currentUserId)
-                .toList();
-
-            if (mine.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.post_add_outlined,
-                      size: 72,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Aucune publication',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Publiez votre premier document',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () => context.go('/add-document'),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Publier'),
-                    ),
-                  ],
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                leading: const AppBackButton(),
+                title: const Text('Mes publications'),
+              ),
+              if (state is DocumentLoading)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  sliver: SliverToBoxAdapter(
+                    child: DocumentListSkeleton(count: 3),
+                  ),
+                )
+              else if (state is DocumentLoaded)
+                _buildList(context, state)
+              else
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('Chargement...')),
                 ),
-              );
-            }
+            ],
+          );
+        },
+      ),
+    );
+  }
 
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              itemCount: mine.length,
-              itemBuilder: (context, index) {
-                final doc = mine[index];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildList(BuildContext context, DocumentLoaded state) {
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState.status == AuthStatus.authenticated
+        ? authState.user!.uid
+        : '';
+
+    final mine = state.documents
+        .where((doc) => doc.finderId == currentUserId)
+        .toList();
+
+    if (mine.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.post_add_outlined,
+                size: 72,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Aucune publication',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Publiez votre premier document',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => context.go('/add-document'),
+                icon: const Icon(Icons.add),
+                label: const Text('Publier'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      sliver: SliverList.builder(
+        itemCount: mine.length,
+        itemBuilder: (context, index) {
+          final doc = mine[index];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DocumentCard(document: doc),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    DocumentCard(document: doc),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton.icon(
-                            onPressed: () =>
-                                context.go('/edit-document/${doc.id}'),
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text('Modifier'),
-                          ),
-                          const SizedBox(width: 8),
-                          TextButton.icon(
-                            onPressed: () => _confirmDelete(doc),
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              size: 18,
-                              color: AppColors.danger,
-                            ),
-                            label: const Text(
-                              'Supprimer',
-                              style: TextStyle(color: AppColors.danger),
-                            ),
-                          ),
-                        ],
+                    TextButton.icon(
+                      onPressed: () => context.go('/edit-document/${doc.id}'),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Modifier'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () => _confirmDelete(doc),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.danger,
+                      ),
+                      label: const Text(
+                        'Supprimer',
+                        style: TextStyle(color: AppColors.danger),
                       ),
                     ),
                   ],
-                );
-              },
-            );
-          }
-
-          return const Center(child: Text('Chargement...'));
+                ),
+              ),
+            ],
+          );
         },
       ),
     );

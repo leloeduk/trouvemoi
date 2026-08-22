@@ -20,12 +20,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     try {
       final user = _authRepository.currentUser;
       if (user != null) {
-        // TODO: Récupérer les statistiques depuis Firestore
-        emit(ProfileLoaded(
-          user: user,
-          documentsFound: 5,
-          documentsLost: 2,
-        ));
+        emit(ProfileLoaded(user: user));
       } else {
         emit(ProfileError('Utilisateur non connecté'));
       }

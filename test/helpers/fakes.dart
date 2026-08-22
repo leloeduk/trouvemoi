@@ -30,6 +30,7 @@ DocumentEntity sampleDocument({
   String finderName = 'Jean Congo',
   String finderPhone = '061234567',
   String location = 'Brazzaville',
+  String arrondissement = '',
   DateTime? date,
   DocumentStatus status = DocumentStatus.found,
 }) {
@@ -43,6 +44,7 @@ DocumentEntity sampleDocument({
     finderName: finderName,
     finderPhone: finderPhone,
     location: location,
+    arrondissement: arrondissement,
     date: date ?? DateTime(2026, 7, 30, 14, 30),
     status: status,
   );
@@ -130,6 +132,31 @@ class FakeDocumentRepository implements DocumentRepository {
   Future<void> deleteDocument(String id) async {
     if (throwOnDelete) throw Exception('delete failed');
     _documents.removeWhere((d) => d.id == id);
+  }
+
+  @override
+  Future<void> updateDocumentStatus(String id, DocumentStatus status) async {
+    if (throwOnLoad) throw Exception('update failed');
+    _documents = _documents
+        .map((d) => d.id == id ? _copyWithStatus(d, status) : d)
+        .toList();
+  }
+
+  DocumentEntity _copyWithStatus(DocumentEntity doc, DocumentStatus status) {
+    return DocumentEntity(
+      id: doc.id,
+      type: doc.type,
+      title: doc.title,
+      description: doc.description,
+      imageUrl: doc.imageUrl,
+      finderId: doc.finderId,
+      finderName: doc.finderName,
+      finderPhone: doc.finderPhone,
+      location: doc.location,
+      arrondissement: doc.arrondissement,
+      date: doc.date,
+      status: status,
+    );
   }
 }
 

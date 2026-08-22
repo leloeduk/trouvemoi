@@ -32,6 +32,7 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
   final _phoneController = TextEditingController();
 
   CongoCity? _selectedCity;
+  String? _selectedArrondissement;
   String _selectedType = AppConstants.documentTypes.first;
   File? _selectedImage;
   DocumentStatus _status = DocumentStatus.found;
@@ -73,6 +74,7 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
     if (selected != null) {
       setState(() {
         _selectedCity = selected;
+        _selectedArrondissement = null;
         _cityController.text = selected.name;
       });
     }
@@ -111,6 +113,7 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
             finderName: authState.user!.displayName,
             finderPhone: _phoneController.text.trim(),
             location: _selectedCity!.name,
+            arrondissement: _selectedArrondissement ?? '',
             status: _status,
           ),
         );
@@ -119,10 +122,6 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const Text('Publier un document'),
-      ),
       body: BlocConsumer<DocumentBloc, DocumentState>(
         listener: (context, state) {
           if (state is DocumentAdded) {
@@ -149,208 +148,204 @@ class _AddDocumentPageState extends State<AddDocumentPage> {
         builder: (context, state) {
           final isLoading = state is DocumentLoading;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildImagePicker(isLoading),
-                  const SizedBox(height: 24),
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                leading: const AppBackButton(),
+                title: const Text('Publier un document'),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                sliver: SliverToBoxAdapter(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildImagePicker(isLoading),
+                        const SizedBox(height: 24),
 
-                  // Status Selection
-                  SectionHeader(
-                    icon: Icons.flag_outlined,
-                    title: 'Statut du document',
-                    subtitle: 'Indiquez si le document est trouvé ou perdu',
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<DocumentStatus>(
-                      segments: const [
-                        ButtonSegment(
-                          value: DocumentStatus.found,
-                          label: Text('Trouvé'),
-                          icon: Icon(Icons.check_circle),
+                        // Status Selection
+                        SectionHeader(
+                          icon: Icons.flag_outlined,
+                          title: 'Statut du document',
+                          subtitle:
+                              'Indiquez si le document est trouvé ou perdu',
                         ),
-                        ButtonSegment(
-                          value: DocumentStatus.lost,
-                          label: Text('Perdu'),
-                          icon: Icon(Icons.search),
+                        const SizedBox(height: 12),
+                        DocumentStatusSelector(
+                          value: _status,
+                          enabled: !isLoading,
+                          onChanged: (status) =>
+                              setState(() => _status = status),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Informations
+                        SectionHeader(
+                          icon: Icons.title,
+                          title: 'Informations',
+                          subtitle: 'Détails du document',
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Type
+                        DropdownButtonFormField<String>(
+                          initialValue: _selectedType,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Type de document',
+                            hintText: 'Que cherchez-vous ?',
+                            prefixIcon: Icon(Icons.category_outlined),
+                          ),
+                          items: AppConstants.documentTypes
+                              .map((type) => DropdownMenuItem(
+                                    value: type,
+                                    child: Text(
+                                      type,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: isLoading
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _selectedType = value);
+                                  }
+                                },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Title
+                        TextFormField(
+                          controller: _titleController,
+                          enabled: !isLoading,
+                          decoration: const InputDecoration(
+                            labelText: 'Titre',
+                            hintText: 'Ex: Carte d\'identité, Passeport...',
+                            prefixIcon: Icon(Icons.title),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Veuillez entrer un titre';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Description
+                        TextFormField(
+                          controller: _descriptionController,
+                          enabled: !isLoading,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'Description',
+                            hintText: 'Décrivez le document trouvé/perdu...',
+                            prefixIcon: Icon(Icons.description),
+                            alignLabelWithHint: true,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Veuillez entrer une description';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // City
+                        TextFormField(
+                          controller: _cityController,
+                          enabled: !isLoading,
+                          readOnly: true,
+                          onTap: isLoading ? null : _pickCity,
+                          decoration: const InputDecoration(
+                            labelText: 'Ville',
+                            hintText: 'Choisir une ville du Congo',
+                            prefixIcon: Icon(Icons.location_city),
+                            suffixIcon: Icon(Icons.arrow_drop_down),
+                          ),
+                          validator: (value) {
+                            if (_selectedCity == null) {
+                              return 'Veuillez choisir une ville';
+                            }
+                            return null;
+                          },
+                        ),
+                        if (_selectedCity != null) ...[
+                          const SizedBox(height: 8),
+                          ArrondissementDropdown(
+                            city: _selectedCity!,
+                            value: _selectedArrondissement,
+                            enabled: !isLoading,
+                            onChanged: (arrondissement) => setState(
+                              () => _selectedArrondissement = arrondissement,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+
+                        // Phone
+                        TextFormField(
+                          controller: _phoneController,
+                          enabled: !isLoading,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Téléphone',
+                            hintText: '06 635 24 55',
+                            prefixIcon: Icon(Icons.phone),
+                            helperText:
+                                '9 chiffres commençant par 04, 05 ou 06',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Veuillez entrer votre numéro';
+                            }
+                            final cleaned =
+                                value.trim().replaceAll(RegExp(r'[\s.-]'), '');
+                            final local = RegExp(r'^0[4-6]\d{7}$');
+                            if (!local.hasMatch(cleaned)) {
+                              return 'Numéro invalide (9 chiffres, 04/05/06)';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Submit Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: FilledButton.icon(
+                            onPressed: (isLoading || _isSubmitting)
+                                ? null
+                                : _submitForm,
+                            icon: isLoading || _isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.publish),
+                            label: Text(
+                              isLoading || _isSubmitting
+                                  ? 'Publication...'
+                                  : 'Publier',
+                            ),
+                          ),
                         ),
                       ],
-                      selected: {_status},
-                      showSelectedIcon: false,
-                      onSelectionChanged: isLoading
-                          ? null
-                          : (selection) {
-                              setState(() {
-                                _status = selection.first;
-                              });
-                            },
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Informations
-                  SectionHeader(
-                    icon: Icons.title,
-                    title: 'Informations',
-                    subtitle: 'Détails du document',
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Type
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedType,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Type de document',
-                      hintText: 'Que cherchez-vous ?',
-                      prefixIcon: Icon(Icons.category_outlined),
-                    ),
-                    items: AppConstants.documentTypes
-                        .map((type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(
-                                type,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
-                        .toList(),
-                    onChanged: isLoading
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              setState(() => _selectedType = value);
-                            }
-                          },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Title
-                  TextFormField(
-                    controller: _titleController,
-                    enabled: !isLoading,
-                    decoration: const InputDecoration(
-                      labelText: 'Titre',
-                      hintText: 'Ex: Carte d\'identité, Passeport...',
-                      prefixIcon: Icon(Icons.title),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Veuillez entrer un titre';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Description
-                  TextFormField(
-                    controller: _descriptionController,
-                    enabled: !isLoading,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      hintText: 'Décrivez le document trouvé/perdu...',
-                      prefixIcon: Icon(Icons.description),
-                      alignLabelWithHint: true,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Veuillez entrer une description';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // City
-                  TextFormField(
-                    controller: _cityController,
-                    enabled: !isLoading,
-                    readOnly: true,
-                    onTap: isLoading ? null : _pickCity,
-                    decoration: const InputDecoration(
-                      labelText: 'Ville',
-                      hintText: 'Choisir une ville du Congo',
-                      prefixIcon: Icon(Icons.location_city),
-                      suffixIcon: Icon(Icons.arrow_drop_down),
-                    ),
-                    validator: (value) {
-                      if (_selectedCity == null) {
-                        return 'Veuillez choisir une ville';
-                      }
-                      return null;
-                    },
-                  ),
-                  if (_selectedCity != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Département : ${_selectedCity!.department}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-
-                  // Phone
-                  TextFormField(
-                    controller: _phoneController,
-                    enabled: !isLoading,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Téléphone',
-                      hintText: '06 635 24 55',
-                      prefixIcon: Icon(Icons.phone),
-                      helperText: '9 chiffres commençant par 04, 05 ou 06',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Veuillez entrer votre numéro';
-                      }
-                      final cleaned =
-                          value.trim().replaceAll(RegExp(r'[\s.-]'), '');
-                      final local = RegExp(r'^0[4-6]\d{7}$');
-                      if (!local.hasMatch(cleaned)) {
-                        return 'Numéro invalide (9 chiffres, 04/05/06)';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: FilledButton.icon(
-                      onPressed: (isLoading || _isSubmitting) ? null : _submitForm,
-                      icon: isLoading || _isSubmitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.publish),
-                      label: Text(
-                        isLoading || _isSubmitting
-                            ? 'Publication...'
-                            : 'Publier',
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),

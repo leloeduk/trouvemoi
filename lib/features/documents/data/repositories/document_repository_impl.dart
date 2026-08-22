@@ -32,13 +32,28 @@ class DocumentRepositoryImpl implements DocumentRepository {
 
   @override
   Stream<List<DocumentEntity>> getDocumentsByStatus(DocumentStatus status) {
-    final statusString = status == DocumentStatus.found ? 'found' : 'lost';
-    return _datasource.getDocumentsByStatus(statusString);
+    return _datasource.getDocumentsByStatus(_statusString(status));
+  }
+
+  static String _statusString(DocumentStatus status) {
+    switch (status) {
+      case DocumentStatus.found:
+        return 'found';
+      case DocumentStatus.resolved:
+        return 'resolved';
+      case DocumentStatus.lost:
+        return 'lost';
+    }
   }
 
   @override
   Future<DocumentEntity?> getDocumentById(String id) async {
     return await _datasource.getDocumentById(id);
+  }
+
+  @override
+  Future<void> updateDocumentStatus(String id, DocumentStatus status) async {
+    await _datasource.updateDocumentStatus(id, _statusString(status));
   }
 
   @override

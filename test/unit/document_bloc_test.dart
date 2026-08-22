@@ -309,4 +309,27 @@ void main() {
       ],
     );
   });
+
+  group('DocumentBloc - MarkDocumentResolvedEvent', () {
+    blocTest<DocumentBloc, DocumentState>(
+      'marque le document comme résolu puis recharge les données',
+      build: () => DocumentBloc(
+        FakeDocumentRepository(documents: [doc1]),
+      ),
+act: (bloc) => bloc.add(MarkDocumentResolvedEvent('doc-1')),
+      expect: () => [
+        isA<DocumentLoading>(),
+        isA<DocumentDetailLoaded>().having(
+          (s) => s.document.isResolved,
+          'document.isResolved',
+          isTrue,
+        ),
+        isA<DocumentLoaded>().having(
+          (s) => s.documents.first.isResolved,
+          'documents.first.isResolved',
+          isTrue,
+        ),
+      ],
+    );
+  });
 }

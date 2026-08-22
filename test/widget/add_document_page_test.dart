@@ -67,6 +67,7 @@ void main() {
     );
 
     await tester.ensureVisible(submitButton());
+    await tester.pump();
     await tester.tap(submitButton());
     await settleWithPumps(tester);
 
@@ -94,18 +95,29 @@ void main() {
 
     final villeField = find.widgetWithText(TextFormField, 'Ville');
     await tester.ensureVisible(villeField);
+    await tester.pump();
     await settleWithPumps(tester);
     await tester.tap(villeField);
     await settleWithPumps(tester);
     await tester.tap(find.text('Brazzaville').first);
     await settleWithPumps(tester);
 
+    // Choisir un arrondissement (Brazzaville en possède plusieurs)
+    await tester.ensureVisible(find.text('Arrondissement'));
+    await tester.pump();
+    await tester.tap(find.text('Arrondissement'), warnIfMissed: false);
+    await settleWithPumps(tester);
+    await tester.tap(find.text('Makélékélé').last);
+    await settleWithPumps(tester);
+
     final phoneField = find.widgetWithText(TextFormField, 'Téléphone');
     await tester.ensureVisible(phoneField);
+    await tester.pump();
     await settleWithPumps(tester);
     await tester.enterText(phoneField, '061234567');
 
     await tester.ensureVisible(submitButton());
+    await tester.pump();
     await tester.tap(submitButton());
     await settleWithPumps(tester);
 

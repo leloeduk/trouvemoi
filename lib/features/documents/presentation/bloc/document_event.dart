@@ -38,6 +38,7 @@ class AddDocumentEvent extends DocumentEvent {
   final String finderName;
   final String finderPhone;
   final String location;
+  final String arrondissement;
   final DocumentStatus status;
 
   AddDocumentEvent({
@@ -49,6 +50,7 @@ class AddDocumentEvent extends DocumentEvent {
     required this.finderName,
     required this.finderPhone,
     required this.location,
+    this.arrondissement = '',
     required this.status,
   });
 
@@ -62,6 +64,7 @@ class AddDocumentEvent extends DocumentEvent {
         finderName,
         finderPhone,
         location,
+        arrondissement,
         status,
       ];
 }
@@ -78,6 +81,7 @@ class UpdateDocumentEvent extends DocumentEvent {
   final String finderName;
   final String finderPhone;
   final String location;
+  final String arrondissement;
   final DateTime date;
   final DocumentStatus status;
 
@@ -92,6 +96,7 @@ class UpdateDocumentEvent extends DocumentEvent {
     required this.finderName,
     required this.finderPhone,
     required this.location,
+    this.arrondissement = '',
     required this.date,
     required this.status,
   });
@@ -108,6 +113,7 @@ class UpdateDocumentEvent extends DocumentEvent {
         finderName,
         finderPhone,
         location,
+        arrondissement,
         date,
         status,
       ];
@@ -126,6 +132,15 @@ class DeleteDocumentEvent extends DocumentEvent {
 class LoadDocumentByIdEvent extends DocumentEvent {
   final String documentId;
   LoadDocumentByIdEvent(this.documentId);
+
+  @override
+  List<Object?> get props => [documentId];
+}
+
+// Marquer un document comme résolu (par le publieur)
+class MarkDocumentResolvedEvent extends DocumentEvent {
+  final String documentId;
+  MarkDocumentResolvedEvent(this.documentId);
 
   @override
   List<Object?> get props => [documentId];

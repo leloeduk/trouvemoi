@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/congo_cities.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../domain/entities/document_entity.dart';
 
 Future<CongoCity?> showCityPicker(BuildContext context) {
   return showModalBottomSheet<CongoCity>(
@@ -10,6 +11,94 @@ Future<CongoCity?> showCityPicker(BuildContext context) {
     useSafeArea: true,
     builder: (context) => const _CityPickerSheet(),
   );
+}
+
+class DocumentStatusSelector extends StatelessWidget {
+  final DocumentStatus value;
+  final ValueChanged<DocumentStatus> onChanged;
+  final bool enabled;
+
+  const DocumentStatusSelector({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _StatusChoice(
+            label: 'Trouvé',
+            icon: Icons.check_circle,
+            color: AppColors.success,
+            selected: value == DocumentStatus.found,
+            enabled: enabled,
+            onTap: () => onChanged(DocumentStatus.found),
+          ),
+        ),
+        Expanded(
+          child: _StatusChoice(
+            label: 'Perdu',
+            icon: Icons.search,
+            color: AppColors.danger,
+            selected: value == DocumentStatus.lost,
+            enabled: enabled,
+            onTap: () => onChanged(DocumentStatus.lost),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChoice extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _StatusChoice({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      selected: selected,
+      onSelected: enabled ? (_) => onTap() : null,
+      showCheckmark: false,
+      selectedColor: color.withValues(alpha: 0.12),
+      backgroundColor: AppColors.surface,
+      side: BorderSide(
+        color: selected ? color : AppColors.border,
+        width: selected ? 1.6 : 1,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      labelPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 25),
+      avatar: Icon(icon,
+          size: 25, color: selected ? color : AppColors.textSecondary),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: selected ? color : AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
+      ),
+    );
+  }
 }
 
 class SectionHeader extends StatelessWidget {
@@ -193,7 +282,11 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          subtitle: Text(city.department),
+                          subtitle: Text(
+                            city.hasArrondissements
+                                ? '${city.department} — ${city.arrondissements.length} arrondissements'
+                                : city.department,
+                          ),
                           trailing: const Icon(
                             Icons.chevron_right,
                             color: AppColors.textSecondary,
@@ -206,6 +299,74 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
           ],
         );
       },
+    );
+  }
+}
+
+class ArrondissementDropdown extends StatelessWidget {
+  final CongoCity city;
+  final String? value;
+  final ValueChanged<String> onChanged;
+  final bool enabled;
+
+  const ArrondissementDropdown({
+    super.key,
+    required this.city,
+    required this.value,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!city.hasArrondissements) {
+      return Text(
+        'Département : ${city.department}',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Arrondissement',
+            hintText: 'Choisir un arrondissement',
+            prefixIcon: Icon(Icons.location_city),
+          ),
+          items: city.arrondissements
+              .map((arr) => DropdownMenuItem(
+                    value: arr,
+                    child: Text(arr, overflow: TextOverflow.ellipsis),
+                  ))
+              .toList(),
+          onChanged: enabled
+              ? (selected) {
+                  if (selected != null) onChanged(selected);
+                }
+              : null,
+          validator: (selected) {
+            if (selected == null || selected.isEmpty) {
+              return 'Veuillez choisir un arrondissement';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Département : ${city.department}',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ],
     );
   }
 }

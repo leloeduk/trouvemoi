@@ -12,10 +12,13 @@ class DocumentCard extends StatelessWidget {
   const DocumentCard({super.key, required this.document});
 
   bool get _isFound => document.status == DocumentStatus.found;
+  bool get _isResolved => document.isResolved;
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _isFound ? AppColors.success : AppColors.lost;
+    final statusColor = _isResolved
+        ? AppColors.resolved
+        : (_isFound ? AppColors.success : AppColors.lost);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -69,13 +72,17 @@ class DocumentCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          _isFound ? Icons.check_circle : Icons.search,
+                          _isResolved
+                              ? Icons.verified_outlined
+                              : (_isFound ? Icons.check_circle : Icons.search),
                           size: 16,
                           color: Colors.white,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _isFound ? 'TROUVÉ' : 'PERDU',
+                          _isResolved
+                              ? 'RÉCUPÉRÉ'
+                              : (_isFound ? 'TROUVÉ' : 'PERDU'),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,

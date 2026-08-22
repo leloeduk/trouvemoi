@@ -27,17 +27,6 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const Text('Mon Profil'),
-        actions: [
-          IconButton(
-            tooltip: 'Modifier le profil',
-            icon: const Icon(Icons.edit),
-            onPressed: () => _showEditProfileDialog(context),
-          ),
-        ],
-      ),
       body: BlocConsumer<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state is ProfileUpdated) {
@@ -61,119 +50,115 @@ class _ProfilePageState extends State<ProfilePage> {
 
           if (state is ProfileLoaded) {
             final user = state.user;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: Column(
-                children: [
-                  // Profile Header
-                  _ProfileHeader(
-                    photoUrl: user.photoUrl,
-                    displayName: user.displayName,
-                    email: user.email,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Statistics
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatCard(
-                          icon: Icons.check_circle,
-                          label: 'Trouvés',
-                          value: state.documentsFound.toString(),
-                          color: AppColors.success,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _StatCard(
-                          icon: Icons.search,
-                          label: 'Perdus',
-                          value: state.documentsLost.toString(),
-                          color: AppColors.lost,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Menu Options
-                  Card(
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  leading: const AppBackButton(),
+                  title: const Text('Mon Profil'),
+                  actions: [
+                    IconButton(
+                      tooltip: 'Modifier le profil',
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => _showEditProfileDialog(context),
+                    ),
+                  ],
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  sliver: SliverToBoxAdapter(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _ProfileMenuItem(
-                          icon: Icons.history,
-                          title: 'Mes publications',
-                          onTap: () => context.go('/my-publications'),
+                        // Profile Header
+                        _ProfileHeader(
+                          photoUrl: user.photoUrl,
+                          displayName: user.displayName,
+                          email: user.email,
                         ),
-                        const Divider(),
-                        _ProfileMenuItem(
-                          icon: Icons.favorite_border,
-                          title: 'Favoris',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Fonctionnalité à venir'),
+                        const SizedBox(height: 20),
+
+                        // Menu Options
+                        Card(
+                          child: Column(
+                            children: [
+                              _ProfileMenuItem(
+                                icon: Icons.history,
+                                title: 'Mes publications',
+                                onTap: () => context.go('/my-publications'),
                               ),
-                            );
-                          },
-                        ),
-                        const Divider(),
-                        _ProfileMenuItem(
-                          icon: Icons.settings,
-                          title: 'Paramètres',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Fonctionnalité à venir'),
+                              const Divider(),
+                              _ProfileMenuItem(
+                                icon: Icons.favorite_border,
+                                title: 'Favoris',
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Fonctionnalité à venir'),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
+                              const Divider(),
+                              _ProfileMenuItem(
+                                icon: Icons.settings,
+                                title: 'Paramètres',
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Fonctionnalité à venir'),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Divider(),
+                              _ProfileMenuItem(
+                                icon: Icons.help_outline,
+                                title: 'Aide & Support',
+                                onTap: () => context.go('/support'),
+                              ),
+                              const Divider(),
+                              _ProfileMenuItem(
+                                icon: Icons.info_outline,
+                                title: 'À propos de l\'app',
+                                onTap: () => context.go('/about'),
+                              ),
+                            ],
+                          ),
                         ),
-                        const Divider(),
-                        _ProfileMenuItem(
-                          icon: Icons.help_outline,
-                          title: 'Aide & Support',
-                          onTap: () => context.go('/support'),
+                        const SizedBox(height: 20),
+
+                        // Sign Out Button
+                        OutlinedButton.icon(
+                          onPressed: () => _showSignOutDialog(context),
+                          icon: const Icon(
+                            Icons.logout,
+                            color: AppColors.danger,
+                          ),
+                          label: const Text(
+                            'Se déconnecter',
+                            style: TextStyle(color: AppColors.danger),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.danger),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
                         ),
-                        const Divider(),
-                        _ProfileMenuItem(
-                          icon: Icons.info_outline,
-                          title: 'À propos de l\'app',
-                          onTap: () => context.go('/about'),
+                        const SizedBox(height: 16),
+
+                        // App Version
+                        Text(
+                          'Trouve Moi — Version 1.0.0',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Sign Out Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _showSignOutDialog(context),
-                      icon: const Icon(Icons.logout, color: AppColors.danger),
-                      label: const Text(
-                        'Se déconnecter',
-                        style: TextStyle(color: AppColors.danger),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.danger),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // App Version
-                  Text(
-                    'Trouve Moi — Version 1.0.0',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             );
           }
 
@@ -289,56 +274,6 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 24, color: color),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ],
-        ),
       ),
     );
   }

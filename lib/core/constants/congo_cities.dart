@@ -1,24 +1,84 @@
 class CongoCity {
   final String name;
   final String department;
+  final List<String> arrondissements;
 
-  const CongoCity({required this.name, required this.department});
+  const CongoCity({
+    required this.name,
+    required this.department,
+    this.arrondissements = const [],
+  });
+
+  bool get hasArrondissements => arrondissements.isNotEmpty;
 
   @override
   String toString() => name;
+
+  static const List<String> brazzaville = [
+    'Makélékélé',
+    'Bacongo',
+    'Poto-Poto',
+    'Moungali',
+    'Ouenzé',
+    'Talangaï',
+    'Mfilou-Ngamaba',
+    'Madibou',
+    'Djiri',
+  ];
+
+  static const List<String> pointeNoire = [
+    'Lumumba',
+    'Mvou-Mvou',
+    'Tié-Tié',
+    'Loandjili',
+    'Mongo-Mpoukou',
+    'Ngoyo',
+  ];
+
+  static const List<String> dolisie = ['Arrondissement 1', 'Arrondissement 2'];
+  static const List<String> mossendjo = [
+    'Arrondissement 1',
+    'Arrondissement 2',
+  ];
+  static const List<String> nkayi = ['Arrondissement 1', 'Arrondissement 2'];
+  static const List<String> ouesso = ['Arrondissement 1', 'Arrondissement 2'];
 }
 
 class CongoCities {
   static const List<CongoCity> all = [
-    CongoCity(name: 'Brazzaville', department: 'Brazzaville'),
-    CongoCity(name: 'Pointe-Noire', department: 'Pointe-Noire'),
-    CongoCity(name: 'Dolisie', department: 'Niari'),
-    CongoCity(name: 'Nkayi', department: 'Bouenza'),
+    CongoCity(
+      name: 'Brazzaville',
+      department: 'Brazzaville',
+      arrondissements: CongoCity.brazzaville,
+    ),
+    CongoCity(
+      name: 'Pointe-Noire',
+      department: 'Pointe-Noire',
+      arrondissements: CongoCity.pointeNoire,
+    ),
+    CongoCity(
+      name: 'Dolisie',
+      department: 'Niari',
+      arrondissements: CongoCity.dolisie,
+    ),
+    CongoCity(
+      name: 'Nkayi',
+      department: 'Bouenza',
+      arrondissements: CongoCity.nkayi,
+    ),
     CongoCity(name: 'Madingou', department: 'Bouenza'),
     CongoCity(name: 'Mouyondzi', department: 'Bouenza'),
     CongoCity(name: 'Sibiti', department: 'Lékoumou'),
-    CongoCity(name: 'Mossendjo', department: 'Niari'),
-    CongoCity(name: 'Ouesso', department: 'Sangha'),
+    CongoCity(
+      name: 'Mossendjo',
+      department: 'Niari',
+      arrondissements: CongoCity.mossendjo,
+    ),
+    CongoCity(
+      name: 'Ouesso',
+      department: 'Sangha',
+      arrondissements: CongoCity.ouesso,
+    ),
     CongoCity(name: 'Impfondo', department: 'Likouala'),
     CongoCity(name: 'Gamboma', department: 'Nkéni-Alima'),
     CongoCity(name: 'Djambala', department: 'Plateaux'),
@@ -70,5 +130,12 @@ class CongoCities {
             city.name.toLowerCase().contains(q) ||
             city.department.toLowerCase().contains(q))
         .toList();
+  }
+
+  static CongoCity? byName(String name) {
+    for (final city in all) {
+      if (city.name.toLowerCase() == name.trim().toLowerCase()) return city;
+    }
+    return null;
   }
 }

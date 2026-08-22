@@ -96,6 +96,17 @@ class DocumentFirebaseService {
     }
   }
 
+  // Update document status only
+  Future<void> updateDocumentStatus(String id, String status) async {
+    try {
+      await _firestore.collection('documents').doc(id).update({
+        'status': status,
+      });
+    } catch (e) {
+      throw Exception('Failed to update status: $e');
+    }
+  }
+
   // Delete document
   Future<void> deleteDocument(String id) async {
     try {

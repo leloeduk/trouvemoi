@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/ad_banner.dart';
 import '../../../../core/widgets/app_back_button.dart';
+import '../../../../core/widgets/shimmer.dart';
 import '../../domain/entities/document_entity.dart';
 import '../bloc/document_bloc.dart';
 import '../bloc/document_event.dart';
@@ -39,57 +40,66 @@ class _BrowseDocumentsPageState extends State<BrowseDocumentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const Text('Documents'),
-        actions: [
-          IconButton(
-            tooltip: 'Rechercher',
-            icon: const Icon(Icons.search),
-            onPressed: () => context.go('/search-document'),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            leading: const AppBackButton(),
+            title: const Text('Documents'),
+            actions: [
+              IconButton(
+                tooltip: 'Rechercher',
+                icon: const Icon(Icons.search),
+                onPressed: () => context.go('/search-document'),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Column(
-        children: [
           // Filter chips
-          Padding(
+          SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Row(
-              children: [
-                _StatusFilterChip(
-                  label: 'Tous',
-                  icon: Icons.grid_view,
-                  selected: _selectedStatus == null,
-                  onTap: () => _setStatus(null),
-                ),
-                const SizedBox(width: 8),
-                _StatusFilterChip(
-                  label: 'Perdus',
-                  icon: Icons.search,
-                  selected: _selectedStatus == DocumentStatus.lost,
-                  onTap: () => _setStatus(DocumentStatus.lost),
-                ),
-                const SizedBox(width: 8),
-                _StatusFilterChip(
-                  label: 'Trouvés',
-                  icon: Icons.check_circle,
-                  selected: _selectedStatus == DocumentStatus.found,
-                  onTap: () => _setStatus(DocumentStatus.found),
-                ),
-              ],
+            sliver: SliverToBoxAdapter(
+              child: Row(
+                children: [
+                  _StatusFilterChip(
+                    label: 'Tous',
+                    icon: Icons.grid_view,
+                    selected: _selectedStatus == null,
+                    onTap: () => _setStatus(null),
+                  ),
+                  const SizedBox(width: 8),
+                  _StatusFilterChip(
+                    label: 'Perdus',
+                    icon: Icons.search,
+                    selected: _selectedStatus == DocumentStatus.lost,
+                    onTap: () => _setStatus(DocumentStatus.lost),
+                  ),
+                  const SizedBox(width: 8),
+                  _StatusFilterChip(
+                    label: 'Trouvés',
+                    icon: Icons.check_circle,
+                    selected: _selectedStatus == DocumentStatus.found,
+                    onTap: () => _setStatus(DocumentStatus.found),
+                  ),
+                ],
+              ),
             ),
           ),
           // Documents list
-          Expanded(
-            child: BlocBuilder<DocumentBloc, DocumentState>(
-              builder: (context, state) {
-                if (state is DocumentLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (state is DocumentLoaded) {
-                  if (state.documents.isEmpty) {
-                    return Center(
+          BlocBuilder<DocumentBloc, DocumentState>(
+            builder: (context, state) {
+              if (state is DocumentLoading) {
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  sliver: SliverToBoxAdapter(
+                    child: DocumentListSkeleton(count: 3),
+                  ),
+                );
+              }
+              if (state is DocumentLoaded) {
+                if (state.documents.isEmpty) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -105,24 +115,32 @@ class _BrowseDocumentsPageState extends State<BrowseDocumentsPage> {
                           ),
                         ],
                       ),
-                    );
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+                    ),
+                  );
+                }
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  sliver: SliverList.builder(
                     itemCount: state.documents.length,
                     itemBuilder: (context, index) {
                       return DocumentCard(document: state.documents[index]);
                     },
-                  );
-                }
-                if (state is DocumentError) {
-                  return Center(child: Text('Erreur: ${state.message}'));
-                }
-                return const Center(child: Text('Chargement...'));
-              },
-            ),
+                  ),
+                );
+              }
+              if (state is DocumentError) {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('Erreur: ${state.message}')),
+                );
+              }
+              return const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: Text('Chargement...')),
+              );
+            },
           ),
-          const AdBannerWidget(),
+          const SliverToBoxAdapter(child: AdBannerWidget()),
         ],
       ),
       floatingActionButton: FloatingActionButton(

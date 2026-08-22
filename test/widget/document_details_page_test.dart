@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trouvemoi/core/constants/constants.dart';
 import 'package:trouvemoi/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:trouvemoi/features/documents/presentation/bloc/document_bloc.dart';
 import 'package:trouvemoi/features/documents/domain/entities/document_entity.dart';
@@ -88,5 +90,93 @@ void main() {
     expect(find.text('Document introuvable'), findsOneWidget);
     expect(find.text('Accueil'), findsOneWidget);
     expect(find.text('Réessayer'), findsOneWidget);
+  });
+
+  testWidgets('affiche un document résolu avec une bannière', (tester) async {
+    final (authBloc, documentBloc, profileBloc) = createBlocs(
+      documents: [
+        sampleDocument(
+          id: 'doc-1',
+          status: DocumentStatus.resolved,
+        ),
+      ],
+    );
+
+    await pumpDetails(
+      tester,
+      authBloc: authBloc,
+      documentBloc: documentBloc,
+      profileBloc: profileBloc,
+      docId: 'doc-1',
+    );
+
+    expect(find.text('DOCUMENT RÉCUPÉRÉ'), findsOneWidget);
+    expect(find.text('Document récupéré'), findsOneWidget);
+    expect(find.text('Appeler'), findsNothing);
+    expect(find.text('WhatsApp'), findsNothing);
+    expect(find.text('Marquer comme résolu'), findsNothing);
+  });
+
+  testWidgets('le publiant peut marquer son document comme résolu',
+      (tester) async {
+    final (authBloc, documentBloc, profileBloc) = createBlocs(
+      documents: [
+        sampleDocument(id: 'doc-1', finderId: 'user-1'),
+      ],
+    );
+
+    await pumpDetails(
+      tester,
+      authBloc: authBloc,
+      documentBloc: documentBloc,
+      profileBloc: profileBloc,
+      docId: 'doc-1',
+    );
+
+    final resolveButton = find.widgetWithText(FilledButton, 'Marquer comme résolu');
+    expect(resolveButton, findsOneWidget);
+
+    await tester.ensureVisible(resolveButton);
+    await tester.pump();
+    await tester.tap(resolveButton);
+    await settleWithPumps(tester);
+
+    expect(find.text('Document récupéré'), findsOneWidget);
+    expect(find.text('Marquer comme résolu'), findsNothing);
+  });
+
+  testWidgets('l\'administrateur peut supprimer n\'importe quel document',
+      (tester) async {
+    AppConstants.adminUids.add('user-1');
+    addTearDown(() => AppConstants.adminUids.clear());
+
+    final (authBloc, documentBloc, profileBloc) = createBlocs(
+      documents: [
+        sampleDocument(id: 'doc-1', finderId: 'autre-user'),
+      ],
+    );
+
+    await pumpDetails(
+      tester,
+      authBloc: authBloc,
+      documentBloc: documentBloc,
+      profileBloc: profileBloc,
+      docId: 'doc-1',
+    );
+
+    final deleteButton =
+        find.widgetWithText(OutlinedButton, 'Supprimer ce document');
+    expect(deleteButton, findsOneWidget);
+
+    await tester.ensureVisible(deleteButton);
+    await tester.pump();
+    await tester.tap(deleteButton);
+    await settleWithPumps(tester);
+
+    await tester.tap(find.text('Supprimer').last);
+    await settleWithPumps(tester);
+
+    expect(find.text('Document supprimé'), findsOneWidget);
+    expect(find.text('Passeport'), findsNothing);
   });
 }

@@ -21,6 +21,9 @@ abstract class DocumentRepository {
   // Get single document by ID
   Future<DocumentEntity?> getDocumentById(String id);
 
+  // Update document status (ex: resolved)
+  Future<void> updateDocumentStatus(String id, DocumentStatus status);
+
   // Delete document
   Future<void> deleteDocument(String id);
 }

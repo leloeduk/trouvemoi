@@ -6,6 +6,7 @@ import '../../../../core/constants/constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/ad_banner.dart';
 import '../../../../core/widgets/app_back_button.dart';
+import '../../../../core/widgets/shimmer.dart';
 import '../../domain/entities/document_entity.dart';
 import '../bloc/document_bloc.dart';
 import '../bloc/document_event.dart';
@@ -64,168 +65,181 @@ class _SearchDocumentsPageState extends State<SearchDocumentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const Text('Rechercher'),
-      ),
-      body: Column(
-        children: [
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            leading: const AppBackButton(),
+            title: const Text('Rechercher'),
+          ),
           // Search Bar
-          Padding(
+          SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Titre, description ou ville...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        tooltip: 'Effacer',
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearchChanged('');
-                        },
-                      )
-                    : null,
+            sliver: SliverToBoxAdapter(
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Titre, description ou ville...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          tooltip: 'Effacer',
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _onSearchChanged('');
+                          },
+                        )
+                      : null,
+                ),
+                onChanged: _onSearchChanged,
               ),
-              onChanged: _onSearchChanged,
             ),
           ),
 
           // Filters
-          Padding(
+          SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _selectedType,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Type',
-                          prefixIcon: Icon(Icons.category_outlined),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('Tous les types'),
-                          ),
-                          ...AppConstants.documentTypes.map((type) {
-                            return DropdownMenuItem(
-                              value: type,
-                              child: Text(
-                                type,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _selectedType = value),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _selectedCity,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Ville',
-                          prefixIcon: Icon(Icons.location_city),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('Toutes les villes'),
-                          ),
-                          ...CongoCities.all.map((city) {
-                            return DropdownMenuItem(
-                              value: city.name,
-                              child: Text(
-                                city.name,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _selectedCity = value),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _FilterChip(
-                              label: 'Tous',
-                              icon: Icons.grid_view,
-                              selected: _selectedStatus == null,
-                              onTap: () =>
-                                  setState(() => _selectedStatus = null),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedType,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Type',
+                            prefixIcon: Icon(Icons.category_outlined),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
                             ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Trouvés',
-                              icon: Icons.check_circle,
-                              selected: _selectedStatus == DocumentStatus.found,
-                              onTap: () => setState(
-                                  () => _selectedStatus = DocumentStatus.found),
+                          ),
+                          items: [
+                            const DropdownMenuItem(
+                              value: null,
+                              child: Text('Tous les types'),
                             ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Perdus',
-                              icon: Icons.search,
-                              selected: _selectedStatus == DocumentStatus.lost,
-                              onTap: () => setState(
-                                  () => _selectedStatus = DocumentStatus.lost),
-                            ),
+                            ...AppConstants.documentTypes.map((type) {
+                              return DropdownMenuItem(
+                                value: type,
+                                child: Text(
+                                  type,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }),
                           ],
+                          onChanged: (value) =>
+                              setState(() => _selectedType = value),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      tooltip: 'Effacer les filtres',
-                      onPressed: _clearFilters,
-                      icon: const Icon(Icons.filter_alt_off_outlined),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedCity,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Ville',
+                            prefixIcon: Icon(Icons.location_city),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          items: [
+                            const DropdownMenuItem(
+                              value: null,
+                              child: Text('Toutes les villes'),
+                            ),
+                            ...CongoCities.all.map((city) {
+                              return DropdownMenuItem(
+                                value: city.name,
+                                child: Text(
+                                  city.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _selectedCity = value),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _FilterChip(
+                                label: 'Tous',
+                                icon: Icons.grid_view,
+                                selected: _selectedStatus == null,
+                                onTap: () =>
+                                    setState(() => _selectedStatus = null),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Trouvés',
+                                icon: Icons.check_circle,
+                                selected:
+                                    _selectedStatus == DocumentStatus.found,
+                                onTap: () => setState(
+                                    () => _selectedStatus = DocumentStatus.found),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Perdus',
+                                icon: Icons.search,
+                                selected:
+                                    _selectedStatus == DocumentStatus.lost,
+                                onTap: () => setState(
+                                    () => _selectedStatus = DocumentStatus.lost),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Effacer les filtres',
+                        onPressed: _clearFilters,
+                        icon: const Icon(Icons.filter_alt_off_outlined),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SliverToBoxAdapter(child: SizedBox(height: 4)),
 
           // Search Results
-          Expanded(
-            child: BlocBuilder<DocumentBloc, DocumentState>(
-              builder: (context, state) {
-                if (state is DocumentLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+          BlocBuilder<DocumentBloc, DocumentState>(
+            builder: (context, state) {
+              if (state is DocumentLoading) {
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  sliver: SliverToBoxAdapter(
+                    child: DocumentListSkeleton(count: 3),
+                  ),
+                );
+              }
 
-                if (state is DocumentLoaded) {
-                  final results = _applyFilters(state.documents);
+              if (state is DocumentLoaded) {
+                final results = _applyFilters(state.documents);
 
-                  if (results.isEmpty) {
-                    return _EmptyState(
+                if (results.isEmpty) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptyState(
                       icon: _isSearching || state.documents.isNotEmpty
                           ? Icons.filter_alt_off
                           : Icons.search,
@@ -234,35 +248,43 @@ class _SearchDocumentsPageState extends State<SearchDocumentsPage> {
                           : 'Recherchez un document',
                       subtitle:
                           'Modifiez la recherche ou les filtres pour voir plus de résultats',
-                    );
-                  }
+                    ),
+                  );
+                }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  sliver: SliverList.builder(
                     itemCount: results.length,
                     itemBuilder: (context, index) {
                       return DocumentCard(document: results[index]);
                     },
-                  );
-                }
+                  ),
+                );
+              }
 
-                if (state is DocumentError) {
-                  return _EmptyState(
+              if (state is DocumentError) {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyState(
                     icon: Icons.error_outline,
                     title: 'Une erreur est survenue',
                     subtitle: state.message,
-                  );
-                }
+                  ),
+                );
+              }
 
-                return _EmptyState(
+              return SliverFillRemaining(
+                hasScrollBody: false,
+                child: _EmptyState(
                   icon: Icons.search,
                   title: 'Recherchez un document',
                   subtitle: 'Tapez pour commencer la recherche',
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-          const AdBannerWidget(),
+          const SliverToBoxAdapter(child: AdBannerWidget()),
         ],
       ),
     );
