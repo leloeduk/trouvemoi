@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/routes/app_router.dart';
 import 'core/services/ad_service.dart';
+import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_update_notifier.dart';
 import 'core/widgets/connectivity_status.dart';
@@ -25,11 +26,16 @@ void main() async {
   );
   // Publicités AdMob (bannière, interstitielle, app open, récompensée)
   await AdService.instance.init();
-  runApp(const MyApp());
+  // Notifications push
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  runApp(MyApp(notificationService: notificationService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final NotificationService notificationService;
+
+  const MyApp({super.key, required this.notificationService});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +50,9 @@ class MyApp extends StatelessWidget {
         // Document Bloc
         BlocProvider(
           create: (_) => DocumentBloc(
-            DocumentRepositoryImpl(DocumentFirebaseService()),
+            DocumentRepositoryImpl(
+              DocumentFirebaseService(notificationService: notificationService),
+            ),
           ),
         ),
         // Profile Bloc

@@ -168,11 +168,11 @@ class AboutPage extends StatelessWidget {
                                   color: AppColors.danger,
                                 ),
                               ),
-                              title: const Text('Applez'),
+                              title: const Text('Appeler'),
                               subtitle: const Text('+242 06 682 63 52'),
                               onTap: () => _launchUrl(
                                 context,
-                                '+242 06 682 63 52',
+                                'tel:+242066826352',
                               ),
                             ),
                           ],

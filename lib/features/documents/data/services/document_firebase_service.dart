@@ -3,16 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/document_model.dart';
+import '../../../../core/services/notification_service.dart';
 
 class DocumentFirebaseService {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
+  final NotificationService _notificationService;
 
   DocumentFirebaseService({
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
+    NotificationService? notificationService,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+        _storage = storage ?? FirebaseStorage.instance,
+        _notificationService = notificationService ?? NotificationService();
 
   // Upload image to Firebase Storage
   Future<String> uploadImage(File imageFile, String docId) async {
@@ -25,17 +29,22 @@ class DocumentFirebaseService {
     }
   }
 
-  // Save document to Firestore
+// Save document to Firestore
 // Dans document_datasource.dart
 
-  Future<void> saveDocument(DocumentModel document) async {
-    try {
-      final data = document.toFirestore();
-      await _firestore.collection('documents').doc(document.id).set(data);
-    } catch (e) {
-      throw Exception('Failed to save document: $e');
-    }
+Future<void> saveDocument(DocumentModel document) async {
+  try {
+    final data = document.toFirestore();
+    await _firestore.collection('documents').doc(document.id).set(data);
+    await _notificationService.sendNewDocumentNotification(
+      document.id,
+      document.title,
+      document.location,
+    );
+  } catch (e) {
+    throw Exception('Failed to save document: $e');
   }
+}
 
   // Get all documents as stream
   Stream<List<DocumentModel>> getAllDocuments() {
@@ -96,16 +105,32 @@ class DocumentFirebaseService {
     }
   }
 
-  // Update document status only
-  Future<void> updateDocumentStatus(String id, String status) async {
-    try {
-      await _firestore.collection('documents').doc(id).update({
-        'status': status,
-      });
-    } catch (e) {
-      throw Exception('Failed to update status: $e');
+// Update document status only
+Future<void> updateDocumentStatus(String id, String status) async {
+  try {
+    final doc = await _firestore.collection('documents').doc(id).get();
+    if (!doc.exists) {
+      throw Exception('Document not found');
     }
+    final data = doc.data()!;
+    final finderId = data['finderId'] as String?;
+    final title = data['title'] as String?;
+
+    await _firestore.collection('documents').doc(id).update({
+      'status': status,
+    });
+
+    if (status == 'resolved' && finderId != null && title != null) {
+      await _notificationService.sendDocumentRecoveredNotification(
+        id,
+        title,
+        finderId,
+      );
+    }
+  } catch (e) {
+    throw Exception('Failed to update status: $e');
   }
+}
 
   // Delete document
   Future<void> deleteDocument(String id) async {
